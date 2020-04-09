@@ -1,0 +1,59 @@
+version: '2.1'
+
+services:
+
+  heroes-db:
+    container_name: heroes-db
+    build: ./services/heroes/src/db
+    ports:
+      - '5433:5432'
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    healthcheck:
+      test: exit 0
+
+  threats-db:
+    container_name: threats-db
+    build: ./services/threats/src/db
+    ports:
+      - '5434:5432'
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    healthcheck:
+      test: exit 0
+
+  heroes-service:
+    container_name: heroes-service
+    build: ./services/heroes/
+    volumes:
+      - './services/heroes:/src/app'
+      - './services/heroes/package.json:/src/package.json'
+    ports:
+      - '3000:3000'
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@heroes-db:5432/heroes_dev
+      - NODE_ENV=${NODE_ENV}
+    depends_on:
+      heroes-db:
+        condition: service_healthy
+    links:
+      - heroes-db
+
+  threats-service:
+    container_name: threats-service
+    build: ./services/threats/
+    volumes:
+      - './services/threats:/src/app'
+      - './services/threats/package.json:/src/package.json'
+    ports:
+      - '3001:3001'
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@threats-db:5432/threats_dev
+      - NODE_ENV=${NODE_ENV}
+    depends_on:
+      threats-db:
+        condition: service_healthy
+    links:
+      - threats-db
